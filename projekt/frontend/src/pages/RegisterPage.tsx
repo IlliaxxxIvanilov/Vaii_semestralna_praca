@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { register as doRegister, saveAuth } from '../services/authService';
+import { getCsrfCookie } from '../services/api';
 
 const RegisterPage: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const validate = () => {
-    const e: any = {};
+    const e: Record<string, string> = {};
     if (!name) e.name = 'Name is required';
     if (!email) e.email = 'Email is required';
     if (!password) e.password = 'Password is required';
@@ -21,18 +22,41 @@ const RegisterPage: React.FC = () => {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (ev: React.FormEvent) => {
-    ev.preventDefault();
-    if (!validate()) return;
-    setLoading(true);
-    try {
-      const data = await doRegister({ name, email, password, password_confirmation: passwordConfirm });
-      saveAuth(data.user, data.token);
-      navigate('/dashboard');
-    } catch (err: any) {
-      setErrors({ form: err?.response?.data?.message || err?.response?.data?.errors || 'Register failed' });
-    } finally { setLoading(false); }
-  };
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!validate()) return;
+  setLoading(true);
+
+  try {
+    // 1. Najprv získaj CSRF cookie
+    await getCsrfCookie();
+
+    // 2. Potom pošli registráciu
+    const payload = {
+      name,
+      email,
+      password,
+      password_confirmation: passwordConfirm,   // ← presne takto!
+    };
+
+    const data = await doRegister(payload);
+    saveAuth(data.user, data.token);
+    navigate('/dashboard');
+  } catch (error) {
+    if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { message?: string; errors?: unknown } } };
+        const msg = axiosError.response?.data?.message
+                 || axiosError.response?.data?.errors
+                 || 'Register failed';
+        setErrors({ form: typeof msg === 'string' ? msg : JSON.stringify(msg) });
+      } else {
+        setErrors({ form: 'Login failed' });
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
 
   return (
     <div className="auth-page">

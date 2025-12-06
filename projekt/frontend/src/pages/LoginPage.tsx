@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login, saveAuth } from '../services/authService';
+import { getCsrfCookie } from '../services/api';   // ←←←← TOTO PRIDAJ!
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const validate = () => {
-    const e: any = {};
+    const e: Record<string, string> = {};
     if (!email) e.email = 'Email is required';
     if (!password) e.password = 'Password is required';
     setErrors(e);
@@ -22,12 +23,24 @@ const LoginPage: React.FC = () => {
     if (!validate()) return;
     setLoading(true);
     try {
+      await getCsrfCookie();
       const data = await login({ email, password });
       saveAuth(data.user, data.token);
       navigate('/dashboard');
-    } catch (err: any) {
-      setErrors({ form: err?.response?.data?.message || 'Login failed' });
-    } finally { setLoading(false); }
+    } catch (error) {
+      // 100 % bezpečný catch bez "any"
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { message?: string; errors?: unknown } } };
+        const msg = axiosError.response?.data?.message
+                 || axiosError.response?.data?.errors
+                 || 'Login failed';
+        setErrors({ form: typeof msg === 'string' ? msg : JSON.stringify(msg) });
+      } else {
+        setErrors({ form: 'Login failed' });
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -10,60 +10,35 @@ use Illuminate\Support\Facades\Validator;
 class AuthController extends Controller
 {
     public function register(Request $request)
-    {
-        $allowedRoles = ['user', 'librarian'];
+{
+    $validator = Validator::make($request->all(), [
+        'name' => 'required|string|max:255',
+        'email' => 'required|string|email|max:255|unique:users',
+        'password' => 'required|string|min:6|confirmed',
+        'role' => 'sometimes|required|in:user,admin,librarian',   // ← prijímame string role
+    ]);
 
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6|confirmed',
-            'role' => 'nullable|string|in:' . implode(',', $allowedRoles),
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $email = $request->input('email');
-        $parts = explode('@', $email);
-        if (count($parts) === 2) {
-            $domain = $parts[1];
-            $hasMx = false;
-            if (function_exists('checkdnsrr')) {
-                $hasMx = checkdnsrr($domain, 'MX');
-            } elseif (function_exists('getmxrr')) {
-                $hosts = [];
-                $hasMx = getmxrr($domain, $hosts);
-            }
-
-            if (! $hasMx) {
-                return response()->json(['message' => 'Email domain has no MX records or is not reachable'], 422);
-            }
-        }
-
-        $requestedRole = $request->input('role', 'user');
-        $role = 'user';
-
-        $actor = $request->user();
-        if ($actor && $actor->role === 'librarian') {
-            if (in_array($requestedRole, $allowedRoles)) {
-                $role = $requestedRole;
-            }
-        } else {
-            $role = 'user';
-        }
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => $request->password,
-            'role' => $role,
-        ]);
-
-        $token = $user->createToken('api-token')->plainTextToken;
-
-        return response()->json(['user' => $user, 'token' => $token], 201);
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
     }
+
+    // Nájdeme rolu podľa mena a vezmeme jej ID
+    $role = \App\Models\Role::where('name', $request->role ?? 'user')->firstOrFail();
+
+    $user = User::create([
+    'name'     => $request->name,
+    'email'    => $request->email,
+    'password' => Hash::make($request->password),
+    'role_id'  => 1,             
+]);
+
+    $token = $user->createToken('api-token')->plainTextToken;
+
+    return response()->json([
+        'user' => $user->load('role'),
+        'token' => $token
+    ], 201);
+}
 
     public function login(Request $request)
     {
