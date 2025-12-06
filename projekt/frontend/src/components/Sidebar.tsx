@@ -17,6 +17,15 @@ const Sidebar: React.FC = () => {
           )}
         </ul>
       </div>
+      {user?.role === 'admin' && (
+        <div className="sidebar-section admin-section">
+          <h4 style={{ color: '#e74c3c' }}>Administračné nástroje</h4>
+          <ul>
+            <li><Link to="/admin/users">Správa používateľov</Link></li>
+            <li><Link to="/admin/books">Správa kníh</Link></li>
+          </ul>
+        </div>
+      )}
       <div className="sidebar-section">
         <h4>Filters</h4>
         <input className="sidebar-input" placeholder="Search title" />

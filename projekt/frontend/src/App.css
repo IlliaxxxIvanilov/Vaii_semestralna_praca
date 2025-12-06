@@ -204,3 +204,33 @@ body { background: var(--gray); color: var(--dark); height: 100%; }
 .auth-page { padding:2rem 1rem; }
 .auth-card label { display:block; margin-bottom:0.25rem; font-weight:600; }
 .auth-card input { width:100%; padding:0.6rem; border-radius:8px; border:1px solid #e5e7eb; margin-bottom:0.5rem; }
+.admin-section {
+  border-top: 2px solid #e74c3c;
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.admin-section h4 {
+  color: #e74c3c !important;
+  font-weight: 600;
+}
+
+.sidebar-section ul li a {
+  display: block;
+  padding: 0.5rem 0;
+  color: #333;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.sidebar-section ul li a:hover {
+  background: rgba(0,0,0,0.05);
+  padding-left: 0.5rem;
+}
+
+/* Ak chceš červenú farbu len pre admina */
+.dark .admin-section h4,
+.dark .sidebar-section ul li a:hover {
+  color: #ff6b6b;
+}

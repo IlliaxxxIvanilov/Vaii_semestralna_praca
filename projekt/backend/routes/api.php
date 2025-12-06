@@ -20,6 +20,7 @@ Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logo
 
 // Books CRUD (admin only for create/update/delete, all can view)
 Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('users', UserController::class);
     Route::get('/books', [BookController::class, 'index']);
     Route::get('/books/{id}', [BookController::class, 'show']);
     Route::middleware('role:admin')->group(function () {
@@ -30,6 +31,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Users CRUD (admin only)
     Route::middleware('role:admin')->group(function () {
+        Route::post('/users/{id}/toggle-librarian', [UserController::class, 'toggleLibrarian'])
+     ->middleware(['auth:sanctum', 'role:admin']);
+        Route::apiResource('users', UserController::class)->except(['store', 'show']);
         Route::get('/users', [UserController::class, 'index']);
         Route::get('/users/{id}', [UserController::class, 'show']);
         Route::post('/users', [UserController::class, 'store']);

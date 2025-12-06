@@ -32,20 +32,61 @@ class UserController extends Controller
     }
 
     public function update(Request $request, $id)
-    {
-        $user = User::findOrFail($id);
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,'.$id,
-            'role' => 'required|in:visitor,user,librarian,admin',
-        ]);
-        $user->update($validated);
-        return response()->json($user);
+{
+    $user = User::findOrFail($id);
+
+    // Admin môže meniť čokoľvek okrem vlastného účtu (voliteľné)
+    if (auth()->id() == $user->id) {
+        return response()->json(['message' => 'Nemôžeš upraviť sám seba'], 403);
     }
 
-    public function destroy($id)
-    {
-        User::destroy($id);
-        return response()->json(null, 204);
+    $validated = $request->validate([
+        'name'  => 'sometimes|required|string|max:255',
+        'email' => 'sometimes|required|email|unique:users,email,'.$id,
+        'role'  => 'sometimes|required|in:user,librarian,admin', // pridaj librarian
+    ]);
+
+    $user->update($validated);
+
+    return response()->json($user);
+}
+
+public function toggleLibrarian($id)
+{
+    $user = User::findOrFail($id);
+
+    if (auth()->id() == $user->id || $user->role_id === 3) {
+        return response()->json(['message' => 'Nemôžeš zmeniť túto rolu'], 403);
     }
+
+    // Prepnutie 1 ↔ 2
+    $user->role_id = $user->role_id === 2 ? 1 : 2;
+    $user->save();
+
+    // Načítaj reláciu a vráť aj názov role
+    $user->load('role');
+
+    $roleName = $user->role?->name ?? ($user->role_id === 1 ? 'user' : 'librarian');
+
+    return response()->json([
+        'message' => 'Rola bola zmenená',
+        'user' => $user,
+        'role_name' => $roleName   // ← toto je kľúčové!
+    ]);
+}
+
+public function destroy($id)
+{
+    $user = User::findOrFail($id);
+
+    // Nepovoliť zmazanie samého seba
+    if (auth()->id() == $user->id) {
+        return response()->json(['message' => 'Nemôžeš zmazať sám seba'], 403);
+    }
+
+    $user->tokens()->delete(); // zmaž všetky tokeny
+    $user->delete();
+
+    return response()->json(null, 204);
+}
 }

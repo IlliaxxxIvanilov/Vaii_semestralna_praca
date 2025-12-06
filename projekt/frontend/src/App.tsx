@@ -14,6 +14,7 @@ import AdminPage from './pages/AdminPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminUsersPage from './pages/AdminUsersPage';
 
 const App: React.FC = () => (
   <BrowserRouter>
@@ -35,6 +36,14 @@ const App: React.FC = () => (
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route
+  path="/admin/users"
+  element={
+    <ProtectedRoute roles={['admin']}>
+      <AdminUsersPage />
+    </ProtectedRoute>
+  }
+/>
           </Routes>
         </main>
       </div>
