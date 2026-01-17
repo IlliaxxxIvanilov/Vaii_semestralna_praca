@@ -9,17 +9,77 @@ use Illuminate\Support\Facades\Validator;
 
 class BookController extends Controller
 {
+    // get all books with pagination
     public function index(Request $request)
-{
-    $query = Book::with('files', 'categories', 'ratings');
+    {
+        $query = Book::with('files', 'categories', 'ratings');
 
-    // ... tvoj existujúci filter kód ...
+        // search by title, author, or description
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('author', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('isbn', 'like', "%{$search}%");
+            });
+        }
 
-    $books = $query->paginate(12);
+        // filter by author
+        if ($request->has('author')) {
+            $query->where('author', 'like', "%{$request->author}%");
+        }
 
-    // OPRAVA: transformuj data
-    $books->getCollection()->transform(function($book) {
-        return [
+        // OPRAVA: filter by category - SPRÁVNA SYNTAX
+        if ($request->has('category') && $request->category != '') {
+            $query->whereHas('categories', function($q) use ($request) {
+                $q->where('category_id', $request->category);
+            });
+        }
+
+        // sort by
+        if ($request->has('sort')) {
+            $sortField = $request->sort;
+            $sortOrder = $request->get('order', 'asc');
+            $query->orderBy($sortField, $sortOrder);
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+
+        $books = $query->paginate(12);
+
+        // Transform data
+        $books->getCollection()->transform(function($book) {
+            return [
+                'id' => $book->id,
+                'title' => $book->title,
+                'author' => $book->author,
+                'description' => $book->description,
+                'isbn' => $book->isbn,
+                'available_copies' => $book->available_copies,
+                'total_copies' => $book->total_copies,
+                'is_available' => $book->isAvailable(),
+                'cover_url' => $book->getCoverUrl(),
+                'has_pdf' => $book->hasPdf(),
+                'average_rating' => (float) round($book->getAverageRating(), 1),
+                'ratings_count' => (int) $book->getRatingsCount(),
+                'categories' => $book->categories,
+            ];
+        });
+
+        return response()->json($books, 200);
+    }
+
+    // get single book detail
+    public function show($id)
+    {
+        $book = Book::with('files', 'reservations', 'categories', 'ratings')->find($id);
+
+        if (!$book) {
+            return response()->json(['message' => 'Book not found'], 404);
+        }
+
+        $response = [
             'id' => $book->id,
             'title' => $book->title,
             'author' => $book->author,
@@ -32,24 +92,20 @@ class BookController extends Controller
             'has_pdf' => $book->hasPdf(),
             'average_rating' => (float) round($book->getAverageRating(), 1),
             'ratings_count' => (int) $book->getRatingsCount(),
-            'categories' => $book->categories,
+            'categories' => $book->categories->map(function($cat) {
+                return [
+                    'id' => $cat->id,
+                    'name' => $cat->name,
+                ];
+            }),
+            'created_at' => $book->created_at,
+            'updated_at' => $book->updated_at,
         ];
-    });
 
-    return response()->json($books, 200);
-}
-
-    public function show($id)
-    {
-        $book = Book::with('files', 'reservations', 'categories', 'ratings')->find($id);
-
-        if (!$book) {
-            return response()->json(['message' => 'Book not found'], 404);
-        }
-
-        return new BookResource($book);
+        return response()->json($response, 200);
     }
 
+    // create new book (admin only)
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -81,10 +137,11 @@ class BookController extends Controller
 
         return response()->json([
             'message' => 'Book created successfully',
-            'book' => new BookResource($book->load('categories'))
+            'book' => $book->load('categories')
         ], 201);
     }
 
+    // update book (admin only)
     public function update(Request $request, $id)
     {
         $book = Book::find($id);
@@ -115,10 +172,11 @@ class BookController extends Controller
 
         return response()->json([
             'message' => 'Book updated successfully',
-            'book' => new BookResource($book->load('categories'))
+            'book' => $book->load('categories')
         ], 200);
     }
 
+    // delete book (admin only)
     public function destroy($id)
     {
         $book = Book::find($id);
@@ -132,45 +190,62 @@ class BookController extends Controller
         return response()->json(['message' => 'Book deleted successfully'], 200);
     }
 
+    // get popular books (most rated/borrowed)
     public function popular()
-{
-    $books = Book::with('files', 'ratings', 'categories')
-        ->withCount('ratings')
-        ->withAvg('ratings', 'rating')
-        ->orderBy('ratings_count', 'desc')
-        ->orderBy('ratings_avg_rating', 'desc')
-        ->limit(8)
-        ->get()
-        ->map(function($book) {
-            return [
-                'id' => $book->id,
-                'title' => $book->title,
-                'author' => $book->author,
-                'description' => $book->description,
-                'isbn' => $book->isbn,
-                'available_copies' => $book->available_copies,
-                'total_copies' => $book->total_copies,
-                'is_available' => $book->isAvailable(),
-                'cover_url' => $book->getCoverUrl(),
-                'has_pdf' => $book->hasPdf(),
-                'average_rating' => (float) round($book->getAverageRating(), 1),
-                'ratings_count' => (int) $book->getRatingsCount(),
-                'categories' => $book->categories,
-                'created_at' => $book->created_at,
-                'updated_at' => $book->updated_at,
-            ];
-        });
+    {
+        $books = Book::with('files', 'ratings', 'categories')
+            ->withCount('ratings')
+            ->withAvg('ratings', 'rating')
+            ->orderBy('ratings_count', 'desc')
+            ->orderBy('ratings_avg_rating', 'desc')
+            ->limit(8)
+            ->get()
+            ->map(function($book) {
+                return [
+                    'id' => $book->id,
+                    'title' => $book->title,
+                    'author' => $book->author,
+                    'description' => $book->description,
+                    'isbn' => $book->isbn,
+                    'available_copies' => $book->available_copies,
+                    'total_copies' => $book->total_copies,
+                    'is_available' => $book->isAvailable(),
+                    'cover_url' => $book->getCoverUrl(),
+                    'has_pdf' => $book->hasPdf(),
+                    'average_rating' => (float) round($book->getAverageRating(), 1),
+                    'ratings_count' => (int) $book->getRatingsCount(),
+                    'categories' => $book->categories,
+                ];
+            });
 
-    return response()->json($books, 200);
-}
+        return response()->json($books, 200);
+    }
 
+    // get new books
     public function newBooks()
     {
         $books = Book::with('files', 'ratings', 'categories')
             ->orderBy('created_at', 'desc')
-            ->limit(8)
-            ->get();
+            ->limit(12)
+            ->get()
+            ->map(function($book) {
+                return [
+                    'id' => $book->id,
+                    'title' => $book->title,
+                    'author' => $book->author,
+                    'description' => $book->description,
+                    'isbn' => $book->isbn,
+                    'available_copies' => $book->available_copies,
+                    'total_copies' => $book->total_copies,
+                    'is_available' => $book->isAvailable(),
+                    'cover_url' => $book->getCoverUrl(),
+                    'has_pdf' => $book->hasPdf(),
+                    'average_rating' => (float) round($book->getAverageRating(), 1),
+                    'ratings_count' => (int) $book->getRatingsCount(),
+                    'categories' => $book->categories,
+                ];
+            });
 
-        return BookResource::collection($books);
+        return response()->json($books, 200);
     }
 }

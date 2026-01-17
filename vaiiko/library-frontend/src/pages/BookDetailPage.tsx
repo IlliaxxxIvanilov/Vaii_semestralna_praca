@@ -37,7 +37,7 @@ const BookDetailPage: React.FC = () => {
   const fetchRatings = async (): Promise<void> => {
     try {
       const response = await api.get<{ data: Rating[] }>(`/books/${id}/ratings`);
-      setRatings(response.data.data);
+      setRatings(response.data.data || []);
     } catch (error) {
       console.error('Error fetching ratings:', error);
     }
@@ -77,7 +77,7 @@ const BookDetailPage: React.FC = () => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `${book?.title}.pdf`);
+      link.setAttribute('download', `${book?.title || 'book'}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -123,6 +123,9 @@ const BookDetailPage: React.FC = () => {
     return <div className="error-page">Kniha nebola nájdená</div>;
   }
 
+  // OPRAVA: bezpečné získanie rating hodnoty
+  const averageRating = typeof book.average_rating === 'number' ? book.average_rating : 0;
+
   return (
     <div className="book-detail-page">
       <div className="book-detail-container">
@@ -144,10 +147,10 @@ const BookDetailPage: React.FC = () => {
             <div className="book-rating-display">
               <span className="star-large">⭐</span>
               <span className="rating-value-large">
-                {book.average_rating.toFixed(1)}
+                {averageRating.toFixed(1)}
               </span>
               <span className="rating-count">
-                ({book.ratings_count} hodnotení)
+                ({book.ratings_count || 0} hodnotení)
               </span>
             </div>
 
@@ -234,7 +237,7 @@ const BookDetailPage: React.FC = () => {
               {ratings.map((rating) => (
                 <div key={rating.id} className="rating-item">
                   <div className="rating-header">
-                    <span className="rating-user">{rating.user?.name}</span>
+                    <span className="rating-user">{rating.user?.name || 'Používateľ'}</span>
                     <span className="rating-stars">
                       {'⭐'.repeat(Math.round(rating.rating))}
                     </span>

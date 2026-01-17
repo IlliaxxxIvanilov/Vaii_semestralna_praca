@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { Book, Category, PaginatedResponse } from '../types';
 import BookCard from '../components/BookCard';
@@ -13,8 +13,11 @@ const CatalogPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [lastPage, setLastPage] = useState<number>(1);
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  
   const searchQuery = searchParams.get('search') || '';
   const categoryFilter = searchParams.get('category') || '';
+  const isNewPage = location.pathname === '/new';
 
   useEffect(() => {
     fetchCategories();
@@ -22,7 +25,7 @@ const CatalogPage: React.FC = () => {
 
   useEffect(() => {
     fetchBooks();
-  }, [currentPage, searchQuery, categoryFilter]);
+  }, [currentPage, searchQuery, categoryFilter, isNewPage]);
 
   const fetchCategories = async (): Promise<void> => {
     try {
@@ -36,19 +39,33 @@ const CatalogPage: React.FC = () => {
   const fetchBooks = async (): Promise<void> => {
     setLoading(true);
     try {
-      const params: any = { page: currentPage };
-      if (searchQuery) {
-        params.search = searchQuery;
-      }
-      if (categoryFilter) {
-        params.category = categoryFilter;
-      }
+      let endpoint = '/books';
+      
+      // OPRAVA: Ak je to stránka novinky, použi /books/new endpoint
+      if (isNewPage && !searchQuery && !categoryFilter) {
+        endpoint = '/books/new';
+        const response = await api.get(endpoint);
+        // Pre /books/new endpoint (bez paginácie)
+        const booksData = Array.isArray(response.data) ? response.data : response.data.data || [];
+        setBooks(booksData);
+        setLastPage(1);
+      } else {
+        // Pre normálny katalóg s pagináciou
+        const params: any = { page: currentPage };
+        if (searchQuery) {
+          params.search = searchQuery;
+        }
+        if (categoryFilter) {
+          params.category = categoryFilter;
+        }
 
-      const response = await api.get<PaginatedResponse<Book>>('/books', { params });
-      setBooks(response.data.data);
-      setLastPage(response.data.last_page);
+        const response = await api.get<PaginatedResponse<Book>>(endpoint, { params });
+        setBooks(response.data.data);
+        setLastPage(response.data.last_page);
+      }
     } catch (error) {
       console.error('Error fetching books:', error);
+      setBooks([]);
     } finally {
       setLoading(false);
     }
@@ -87,29 +104,31 @@ const CatalogPage: React.FC = () => {
     <div className="catalog-page">
       <div className="catalog-container">
         <div className="catalog-header">
-          <h1 className="catalog-title">Katalog knih</h1>
+          <h1 className="catalog-title">{isNewPage ? 'Novinky' : 'Katalog knih'}</h1>
           <div className="catalog-search">
             <SearchBar onSearch={handleSearch} />
           </div>
         </div>
 
-        <div className="category-filter">
-          <button
-            className={categoryFilter === '' ? 'category-btn active' : 'category-btn'}
-            onClick={() => handleCategoryFilter('')}
-          >
-            Všetky kategórie
-          </button>
-          {categories.map((category) => (
+        {!isNewPage && (
+          <div className="category-filter">
             <button
-              key={category.id}
-              className={categoryFilter === category.id.toString() ? 'category-btn active' : 'category-btn'}
-              onClick={() => handleCategoryFilter(category.id.toString())}
+              className={categoryFilter === '' ? 'category-btn active' : 'category-btn'}
+              onClick={() => handleCategoryFilter('')}
             >
-              {category.name}
+              Všetky kategórie
             </button>
-          ))}
-        </div>
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                className={categoryFilter === category.id.toString() ? 'category-btn active' : 'category-btn'}
+                onClick={() => handleCategoryFilter(category.id.toString())}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+        )}
 
         {loading ? (
           <div className="loading">Nahravam...</div>
@@ -125,7 +144,7 @@ const CatalogPage: React.FC = () => {
               ))}
             </div>
 
-            {lastPage > 1 && (
+            {!isNewPage && lastPage > 1 && (
               <div className="pagination">
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
