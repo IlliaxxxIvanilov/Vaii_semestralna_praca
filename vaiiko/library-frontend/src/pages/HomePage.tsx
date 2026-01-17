@@ -18,9 +18,18 @@ const HomePage: React.FC = () => {
   const fetchPopularBooks = async () => {
     try {
       const response = await api.get('/books/popular');
-      setPopularBooks(response.data);
+      // OPRAVA: over že response.data je array
+      if (Array.isArray(response.data)) {
+        setPopularBooks(response.data);
+      } else if (response.data.data && Array.isArray(response.data.data)) {
+        setPopularBooks(response.data.data);
+      } else {
+        console.error('Unexpected response format:', response.data);
+        setPopularBooks([]);
+      }
     } catch (error) {
       console.error('Error fetching popular books:', error);
+      setPopularBooks([]);
     } finally {
       setLoading(false);
     }
@@ -36,9 +45,9 @@ const HomePage: React.FC = () => {
     <div className="home-page">
       <section className="hero-section">
         <div className="hero-content">
-          <h1 className="hero-title">Online kniznica</h1>
+          <h1 className="hero-title">Onlajn biblioteka</h1>
           <p className="hero-subtitle">
-            Citajte tisic knih online — lahko a zadarmo
+            Chitajte tysiachi knig onlajn — legko, krasivo i besplatno
           </p>
           <div className="hero-search">
             <SearchBar onSearch={handleSearch} />
@@ -48,10 +57,12 @@ const HomePage: React.FC = () => {
 
       <section className="popular-section">
         <div className="section-container">
-          <h2 className="section-title">Popularne knihu</h2>
+          <h2 className="section-title">Populiarnyie knigi</h2>
           
           {loading ? (
             <div className="loading">Nahravam...</div>
+          ) : popularBooks.length === 0 ? (
+            <div className="loading">Žiadne knihy k dispozícii</div>
           ) : (
             <div className="books-grid">
               {popularBooks.map((book) => (

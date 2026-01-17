@@ -8,6 +8,9 @@ interface BookCardProps {
 }
 
 const BookCard: React.FC<BookCardProps> = ({ book }) => {
+  // OPRAVA: over že average_rating existuje a je číslo
+  const rating = typeof book.average_rating === 'number' ? book.average_rating : 0;
+  
   return (
     <Link to={`/books/${book.id}`} className="book-card">
       <div className="book-cover">
@@ -24,7 +27,7 @@ const BookCard: React.FC<BookCardProps> = ({ book }) => {
         <p className="book-author">{book.author}</p>
         <div className="book-rating">
           <span className="star">⭐</span>
-          <span className="rating-value">{book.average_rating.toFixed(1)}</span>
+          <span className="rating-value">{rating.toFixed(1)}</span>
         </div>
       </div>
     </Link>
