@@ -27,6 +27,12 @@ Route::get('/categories/{id}', [CategoryController::class, 'show']);
 
 Route::get('/books/{bookId}/ratings', [RatingController::class, 'index']);
 
+// NOVÉ: Public prístup k cover obrázkom
+Route::get('/files/cover/{bookId}', [FileController::class, 'getCover']);
+
+// DEBUG ROUTE - odstráňte po oprave!
+Route::get('/debug/storage', [FileController::class, 'debugStorage']);
+
 Route::middleware('auth:sanctum')->group(function () {
     
     Route::post('/auth/logout', [AuthController::class, 'logout']);

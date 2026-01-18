@@ -43,7 +43,20 @@ class Book extends Model
     public function getCoverUrl()
     {
         $cover = $this->files()->where('type', 'cover')->first();
-        return $cover ? asset('storage/' . $cover->path) : null;
+        
+        if (!$cover) {
+            return null;
+        }
+
+        $url = url('storage/' . $cover->path);
+        
+        $filePath = storage_path('app/public/' . $cover->path);
+        if (!file_exists($filePath)) {
+            \Log::warning("Cover image not found: {$filePath}");
+            return null;
+        }
+
+        return $cover ? url('api/files/cover/' . $this->id) : null;
     }
 
     public function hasPdf()
