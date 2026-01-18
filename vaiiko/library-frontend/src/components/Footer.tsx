@@ -6,10 +6,10 @@ const Footer: React.FC = () => {
     <footer className="footer">
       <div className="footer-container">
         <div className="footer-left">
-          <p>&copy; 2026 Libreya</p>
+          <p>&copy; 2026 LMS – SYSTÉM NA SPRÁVU ONLINE KNIŽNICE</p>
         </div>
         <div className="footer-right">
-          <p>Online biblioteka dla chtenia</p>
+          <p>Online knižnica pre čítanie</p>
         </div>
       </div>
     </footer>

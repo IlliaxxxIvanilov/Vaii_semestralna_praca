@@ -8,7 +8,7 @@ interface SearchBarProps {
 
 const SearchBar: React.FC<SearchBarProps> = ({ 
   onSearch, 
-  placeholder = 'Poisk knig, avtorov, zhanrov' 
+  placeholder = 'Vyhľadávanie kníh, autorov, žánrov' 
 }) => {
   const [query, setQuery] = useState('');
 

@@ -17,7 +17,7 @@ const Navbar: React.FC = () => {
       <div className="navbar-container">
         <Link to="/" className="navbar-logo">
           <span className="logo-icon">📖</span>
-          <span className="logo-text">Libreya</span>
+          <span className="logo-text">Library Management System</span>
         </Link>
 
         <ul className="navbar-menu">

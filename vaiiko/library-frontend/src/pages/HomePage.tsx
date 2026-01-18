@@ -45,9 +45,9 @@ const HomePage: React.FC = () => {
     <div className="home-page">
       <section className="hero-section">
         <div className="hero-content">
-          <h1 className="hero-title">Onlajn biblioteka</h1>
+          <h1 className="hero-title">Online knižnica</h1>
           <p className="hero-subtitle">
-            Chitajte tysiachi knig onlajn — legko, krasivo i besplatno
+            Čítajte tisíce kníh online — jednoducho, prehľadne a zadarmo
           </p>
           <div className="hero-search">
             <SearchBar onSearch={handleSearch} />
@@ -57,10 +57,10 @@ const HomePage: React.FC = () => {
 
       <section className="popular-section">
         <div className="section-container">
-          <h2 className="section-title">Populiarnyie knigi</h2>
+          <h2 className="section-title">Populárne knihy</h2>
           
           {loading ? (
-            <div className="loading">Nahravam...</div>
+            <div className="loading">Nahrávam...</div>
           ) : popularBooks.length === 0 ? (
             <div className="loading">Žiadne knihy k dispozícii</div>
           ) : (
