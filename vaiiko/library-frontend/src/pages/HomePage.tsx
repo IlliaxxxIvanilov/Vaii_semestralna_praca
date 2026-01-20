@@ -18,7 +18,6 @@ const HomePage: React.FC = () => {
   const fetchPopularBooks = async () => {
     try {
       const response = await api.get('/books/popular');
-      // OPRAVA: over že response.data je array
       if (Array.isArray(response.data)) {
         setPopularBooks(response.data);
       } else if (response.data.data && Array.isArray(response.data.data)) {
