@@ -123,7 +123,6 @@ const BookDetailPage: React.FC = () => {
     return <div className="error-page">Kniha nebola nájdená</div>;
   }
 
-  // OPRAVA: bezpečné získanie rating hodnoty
   const averageRating = typeof book.average_rating === 'number' ? book.average_rating : 0;
 
   return (
