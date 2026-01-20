@@ -8,7 +8,6 @@ interface BookCardProps {
 }
 
 const BookCard: React.FC<BookCardProps> = ({ book }) => {
-  // OPRAVA: over že average_rating existuje a je číslo
   const rating = typeof book.average_rating === 'number' ? book.average_rating : 0;
   
   return (
