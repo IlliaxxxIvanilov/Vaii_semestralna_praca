@@ -41,16 +41,13 @@ const CatalogPage: React.FC = () => {
     try {
       let endpoint = '/books';
       
-      // OPRAVA: Ak je to stránka novinky, použi /books/new endpoint
       if (isNewPage && !searchQuery && !categoryFilter) {
         endpoint = '/books/new';
         const response = await api.get(endpoint);
-        // Pre /books/new endpoint (bez paginácie)
         const booksData = Array.isArray(response.data) ? response.data : response.data.data || [];
         setBooks(booksData);
         setLastPage(1);
       } else {
-        // Pre normálny katalóg s pagináciou
         const params: any = { page: currentPage };
         if (searchQuery) {
           params.search = searchQuery;
