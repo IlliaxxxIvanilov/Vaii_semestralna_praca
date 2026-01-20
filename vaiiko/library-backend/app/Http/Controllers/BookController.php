@@ -9,12 +9,10 @@ use Illuminate\Support\Facades\Validator;
 
 class BookController extends Controller
 {
-    // get all books with pagination
     public function index(Request $request)
     {
         $query = Book::with('files', 'categories', 'ratings');
 
-        // search by title, author, or description
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -25,19 +23,16 @@ class BookController extends Controller
             });
         }
 
-        // filter by author
         if ($request->has('author')) {
             $query->where('author', 'like', "%{$request->author}%");
         }
 
-        // OPRAVA: filter by category - SPRÁVNA SYNTAX
         if ($request->has('category') && $request->category != '') {
             $query->whereHas('categories', function($q) use ($request) {
                 $q->where('category_id', $request->category);
             });
         }
 
-        // sort by
         if ($request->has('sort')) {
             $sortField = $request->sort;
             $sortOrder = $request->get('order', 'asc');
@@ -48,7 +43,6 @@ class BookController extends Controller
 
         $books = $query->paginate(12);
 
-        // Transform data
         $books->getCollection()->transform(function($book) {
             return [
                 'id' => $book->id,
@@ -70,7 +64,6 @@ class BookController extends Controller
         return response()->json($books, 200);
     }
 
-    // get single book detail
     public function show($id)
     {
         $book = Book::with('files', 'reservations', 'categories', 'ratings')->find($id);
@@ -105,7 +98,6 @@ class BookController extends Controller
         return response()->json($response, 200);
     }
 
-    // create new book (admin only)
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -141,7 +133,6 @@ class BookController extends Controller
         ], 201);
     }
 
-    // update book (admin only)
     public function update(Request $request, $id)
     {
         $book = Book::find($id);
@@ -176,7 +167,6 @@ class BookController extends Controller
         ], 200);
     }
 
-    // delete book (admin only)
     public function destroy($id)
     {
         $book = Book::find($id);
@@ -190,7 +180,6 @@ class BookController extends Controller
         return response()->json(['message' => 'Book deleted successfully'], 200);
     }
 
-    // get popular books (most rated/borrowed)
     public function popular()
     {
         $books = Book::with('files', 'ratings', 'categories')
@@ -220,8 +209,7 @@ class BookController extends Controller
 
         return response()->json($books, 200);
     }
-
-    // get new books
+    
     public function newBooks()
     {
         $books = Book::with('files', 'ratings', 'categories')

@@ -25,7 +25,6 @@ class FileController extends Controller
             return response()->json(['message' => 'Book not found'], 404);
         }
 
-        // Vymazať starý cover
         $oldCover = File::where('book_id', $bookId)->where('type', 'cover')->first();
         if ($oldCover) {
             Storage::disk('public')->delete($oldCover->path);
@@ -34,10 +33,8 @@ class FileController extends Controller
 
         $coverFile = $request->file('cover');
         
-        // Generovať unique názov súboru
         $fileName = time() . '_' . uniqid() . '.' . $coverFile->getClientOriginalExtension();
         
-        // Uložiť do storage/app/public/covers/
         $path = $coverFile->storeAs('covers', $fileName, 'public');
 
         $file = File::create([
@@ -49,7 +46,6 @@ class FileController extends Controller
             'uploaded_at' => now(),
         ]);
 
-        // Vrátiť absolútnu URL
         $fullUrl = url('storage/' . $path);
 
         return response()->json([
@@ -88,8 +84,7 @@ class FileController extends Controller
         }
 
         $pdfFile = $request->file('pdf');
-        
-        // Generovať unique názov súboru
+
         $fileName = time() . '_' . uniqid() . '.pdf';
         
         $path = $pdfFile->storeAs('pdfs', $fileName, 'public');
@@ -127,7 +122,6 @@ class FileController extends Controller
         return response()->download($filePath);
     }
 
-    // NOVÁ METÓDA: Priame zobrazenie cover obrázka
     public function getCover($bookId)
     {
         $file = File::where('book_id', $bookId)
@@ -135,7 +129,6 @@ class FileController extends Controller
             ->first();
 
         if (!$file) {
-            // Vrátiť placeholder obrázok alebo 404
             return response()->json(['message' => 'Cover not found'], 404);
         }
 
@@ -149,7 +142,6 @@ class FileController extends Controller
             ], 404);
         }
 
-        // Vrátiť obrázok s správnymi headers
         return response()->file($filePath, [
             'Content-Type' => $file->mime_type,
             'Cache-Control' => 'public, max-age=31536000',
@@ -170,7 +162,6 @@ class FileController extends Controller
         return response()->json(['message' => 'File deleted successfully'], 200);
     }
 
-    // DEBUGOVACIA METÓDA - odstráňte po oprave
     public function debugStorage()
     {
         $covers = File::where('type', 'cover')->get();
