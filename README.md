@@ -1,7 +1,7 @@
 # VAII – Semestrálna práca  
 **Vývoj aplikácií pre internet a intranet**
 
-Toto je môj semestrálny projekt z predmetu **VAII** (2025/2026?).  
+Toto je môj semestrálny projekt z predmetu **VAII** (2025/2026).  
 Plnohodnotná webová aplikácia s **Laravel** backendom a **React** frontendom.
 
 ## Tech stack
@@ -23,15 +23,17 @@ Spusti XAMPP (Apache + MySQL)
 Backend (Laravel)Bashcd backend   
 composer install
 cp .env.example .env
-php artisan key:generateUprav .env – nastav databázu:textDB_CONNECTION=mysql
+php artisan key:generateUprav .env – nastav databázu:text
+DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=nazov_tvojej_databazy
 DB_USERNAME=root
-DB_PASSWORD=Migrácie + seed (ak existuje):Bashphp artisan migrate --seed
-Frontend (React)Bashcd ../frontend    # alebo priamo do priečinka s package.json
+DB_PASSWORD=Migrácie + seed
+Bashphp artisan migrate --seed
+Frontend (React)Bashcd ../frontend    
 npm install
-npm run dev       # alebo npm start
+npm start
 Spustenie
 Backend → php artisan serve (zvyčajne http://127.0.0.1:8000)
 Frontend → npm run dev (zvyčajne http://localhost:5173)
